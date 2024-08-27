@@ -45,7 +45,7 @@ public class TrainController {
     private FoodClient foodClient;
 
     // 微服务接口
-    @GetMapping("/train-service/{tid}/{date}/{userID}")
+    @GetMapping("/train/{tid}/{date}/{userID}")
     public List<TrainOrder> getTrainOrderByTrainAndIdentification(
             @PathVariable String tid,
             @PathVariable String date,
@@ -54,7 +54,7 @@ public class TrainController {
         return trainService.getTrainOrderByTrainAndIdentification(tid, date, userID);
     }
 
-    @GetMapping("train-service/{tid}/{date}")
+    @GetMapping("train/{tid}/{date}")
     public Train getTrainByTidAndDate(
             @PathVariable String tid,
             @PathVariable String date
@@ -335,6 +335,7 @@ public class TrainController {
             orderClient.getOrderByUid(userID, "Food").forEach(o-> {
                 // 该user的每个车餐订单
                 foodClient.getFoodOrders(o.getOid()).forEach(fo-> {
+                    // System.out.println(o.getOid());
                     if (fo.getTrainDate().equals(trainDate) && fo.getTrainId().equals(trainId)) {
                         // 对应的车次的foodOrder
                         OrderDTO tobeCanceled = orderClient.getOrder(fo.getOid());
