@@ -17,7 +17,7 @@ public class StationController {
     @Autowired
     private IStationService stationService;
 
-    @GetMapping("/station")
+    @GetMapping("/trains/station")
     public Map<String, Object> inquireAllStations() {
 //        response.setHeader("Access-Control-Allow-Origin", "http://49.232.244.162");
 
