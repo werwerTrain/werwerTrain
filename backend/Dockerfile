@@ -9,6 +9,7 @@ COPY pom.xml ./
 
 COPY src/ ./src/
 
+
 # 构建项目
 RUN mvn clean package
 
