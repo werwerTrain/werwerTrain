@@ -6,6 +6,7 @@ WORKDIR /app
 
 # 复制 pom.xml 和源码
 COPY pom.xml ./
+
 COPY src/ ./src/
 
 # 构建项目
