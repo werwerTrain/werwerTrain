@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: wwtrain
-        image: qiuer0121/wwtrain:latest
+        image: bxr0820/wwtrain:latest
         ports:
         - containerPort: 9093
         
