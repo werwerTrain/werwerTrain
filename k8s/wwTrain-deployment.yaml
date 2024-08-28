@@ -16,5 +16,5 @@ spec:
       - name: wwTrain
         image: qiuer0121/wwTrain:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 9093
 

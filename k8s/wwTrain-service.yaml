@@ -7,7 +7,7 @@ spec:
     app: wwTrain
   ports:
     - protocol: TCP
-      port: 9090
-      targetPort: 9090
-      nodePort: 30001
+      port: 9093
+      targetPort: 9093
+      nodePort: 30013
   type: NodePort
