@@ -57,6 +57,7 @@ pipeline {
                 bat '''
                 kubectl apply -f k8s/wwTrain-deployment.yaml
                 kubectl apply -f k8s/wwTrain-service.yaml
+                kubectl apply -f k8s/wwTrain-hpa.yaml
                 '''
                 echo '部署成功'
             }
