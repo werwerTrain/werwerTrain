@@ -8,14 +8,14 @@ pipeline {
             }
         }
         
-        // stage('delete old image in k8s'){
-        //     steps{
-        //          bat '''
-        //         kubectl delete -f k8s/wwTrain-deployment.yaml
-        //         kubectl delete -f k8s/wwTrain-service.yaml
-        //         '''
-        //     }
-        // }
+        stage('delete old image in k8s'){
+            steps{
+                 bat '''
+                kubectl delete -f k8s/wwTrain-deployment.yaml || true
+                kubectl delete -f k8s/wwTrain-service.yaml || true
+                '''
+            }
+        }
         stage('Build new image') {
             steps {
                 script {
@@ -32,7 +32,7 @@ pipeline {
                         docker rm $container
                     }
                     '''
-                    bat 'docker rmi -f qiuer0121/wwtrain:latest'
+                    bat 'docker rmi -f qiuer0121/wwtrain:latest || true'
                     bat '''
                     docker build -t qiuer0121/wwtrain .
                     '''
