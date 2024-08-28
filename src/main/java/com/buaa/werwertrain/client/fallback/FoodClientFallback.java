@@ -9,8 +9,7 @@ import java.util.List;
 public class FoodClientFallback implements FoodClient {
     @Override
     public List<FoodOrderDTO> getFoodOrders(String oid) {
-        return new ArrayList<>() {{
-            add(new FoodOrderDTO());
-        }};
+        System.out.println("Get FoodOrders request failed, fallback method executed.");
+        return new ArrayList<>();
     }
 }

@@ -1,12 +1,14 @@
 package com.buaa.werwertrain.client;
 
 import com.buaa.werwertrain.DTO.OrderDTO;
+import com.buaa.werwertrain.client.fallback.UserClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@FeignClient(name = "user-service", path = "/api/users")
+@FeignClient(name = "user-service", path = "/api/users",
+fallback = UserClientFallback.class)
 public interface OrderClient {
     @GetMapping("/orders/{uid}/status")
     List<OrderDTO> getOrdersByUidAndStatus(@PathVariable("uid") String uid,
