@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: werwertrain-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: werwertrain
+  template:
+    metadata:
+      labels:
+        app: werwertrain
+    spec:
+      containers:
+      - name: werwertrain
+        image: luluplum/werwertrain:latest
+        ports:
+        - containerPort: 9093
