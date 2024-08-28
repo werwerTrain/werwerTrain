@@ -1,11 +1,13 @@
 package com.buaa.werwertrain.controller;
 
 import com.buaa.werwertrain.DTO.OrderDTO;
+import com.buaa.werwertrain.DTO.PassengerDTO;
 import com.buaa.werwertrain.client.FoodClient;
 import com.buaa.werwertrain.client.MessageClient;
 import com.buaa.werwertrain.client.OrderClient;
 import com.buaa.werwertrain.client.UserClient;
 import com.buaa.werwertrain.entity.*;
+import com.buaa.werwertrain.service.IPassengerService;
 import com.buaa.werwertrain.service.ITrainService;
 import com.buaa.werwertrain.service.Impl.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ import java.util.*;
 public class TrainController {
     @Autowired
     private ITrainService trainService;
+    @Autowired
+    private IPassengerService passengerService;
 //    @Autowired
 //    private IOrderService orderService;
 //    @Autowired
@@ -52,6 +56,26 @@ public class TrainController {
             @PathVariable String userID
     ) {
         return trainService.getTrainOrderByTrainAndIdentification(tid, date, userID);
+    }
+
+    @PostMapping("/insertPassengers/{id}")
+    Integer insertPassenger(@PathVariable("id") String id, @RequestBody Map<String,String> requestMap) {
+        return passengerService.addPassenger(requestMap.get("name"),requestMap.get("identification"), requestMap.get("phone"), id);
+    }
+
+    @GetMapping("/getTrainIdAndDate/{orderId}")
+    public List<Map<String, Object>> getTrainIdAndDate(@PathVariable String orderId) {
+        return trainService.getTrainIdAndDate(orderId);
+    }
+
+    @GetMapping("/getStartTime/{trainId}/{trainDate}")
+    public Map<String,Object> getStartTime(@PathVariable String trainId, @PathVariable String trainDate) {
+        return trainService.getStartTime(trainId, trainDate);
+    }
+
+    @GetMapping("/getTrainState/{trainId}/{trainDate}")
+    public Boolean getTrainState(@PathVariable String trainId,@PathVariable String trainDate) {
+        return trainService.getTrainState(trainId, trainDate);
     }
 
     @GetMapping("train/{tid}/{date}")
