@@ -1,14 +1,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: wwTrain-hpa
+  name: wwtrain-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: wwTrain-deployment
-  minReplicas: 3
-  maxReplicas: 15
+    name: wwtrain-deployment
+  minReplicas: 1
+  maxReplicas: 5
   metrics:
   - type: Resource
     resource:

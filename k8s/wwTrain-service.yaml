@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: wwTrain-service
+  name: wwtrain-service
 spec:
   selector:
-    app: wwTrain
+    app: wwtrain
   ports:
     - protocol: TCP
       port: 9093

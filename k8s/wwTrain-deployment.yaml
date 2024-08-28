@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wwTrain-deployment
+  name: wwtrain-deployment
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: wwTrain
+      app: wwtrain
   strategy:
     rollingUpdate: 
       maxSurge: 50% 
@@ -15,11 +15,11 @@ spec:
   template:
     metadata:
       labels:
-        app: wwTrain
+        app: wwtrain
     spec:
       containers:
-      - name: wwTrain
-        image: qiuer0121/wwTrain:latest
+      - name: wwtrain
+        image: qiuer0121/wwtrain:latest
         ports:
         - containerPort: 9093
         
