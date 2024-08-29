@@ -8,6 +8,7 @@ pipeline {
             }
         }
         
+        
         stage('delete old image in k8s'){
             steps{
                  bat '''
