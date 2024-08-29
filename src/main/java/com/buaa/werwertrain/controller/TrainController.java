@@ -27,8 +27,6 @@ import java.util.*;
 public class TrainController {
     @Autowired
     private ITrainService trainService;
-    @Autowired
-    private IPassengerService passengerService;
 //    @Autowired
 //    private IOrderService orderService;
 //    @Autowired
@@ -56,11 +54,6 @@ public class TrainController {
             @PathVariable String userID
     ) {
         return trainService.getTrainOrderByTrainAndIdentification(tid, date, userID);
-    }
-
-    @PostMapping("/insertPassengers/{id}")
-    Integer insertPassenger(@PathVariable("id") String id, @RequestBody Map<String,String> requestMap) {
-        return passengerService.addPassenger(requestMap.get("name"),requestMap.get("identification"), requestMap.get("phone"), id);
     }
 
     @GetMapping("/getTrainIdAndDate/{orderId}")
