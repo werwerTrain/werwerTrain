@@ -1,13 +1,18 @@
 package com.buaa.werwertrain.controller;
 
 import com.buaa.werwertrain.DTO.OrderDTO;
+import com.buaa.werwertrain.DTO.PassengerDTO;
 import com.buaa.werwertrain.client.FoodClient;
 import com.buaa.werwertrain.client.MessageClient;
 import com.buaa.werwertrain.client.OrderClient;
 import com.buaa.werwertrain.client.UserClient;
 import com.buaa.werwertrain.entity.*;
+import com.buaa.werwertrain.service.IPassengerService;
 import com.buaa.werwertrain.service.ITrainService;
 import com.buaa.werwertrain.service.Impl.EmailService;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -44,8 +49,14 @@ public class TrainController {
     @Autowired
     private FoodClient foodClient;
 
+    private CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.of(CircuitBreakerConfig.custom()
+            .enableAutomaticTransitionFromOpenToHalfOpen()
+            .failureRateThreshold(20)
+            .build());
+
     // 微服务接口
     @GetMapping("/train/{tid}/{date}/{userID}")
+    @CircuitBreaker(name = "getTrainOrder", fallbackMethod = "fallbackGetTrainOrder")
     public List<TrainOrder> getTrainOrderByTrainAndIdentification(
             @PathVariable String tid,
             @PathVariable String date,
@@ -54,12 +65,54 @@ public class TrainController {
         return trainService.getTrainOrderByTrainAndIdentification(tid, date, userID);
     }
 
+    public List<TrainOrder> fallbackGetTrainOrder(String tid, String date, String userID, Throwable throwable) {
+        System.out.println("Get train orders request failed, fallback method executed.");
+        return new ArrayList<>();
+    }
+
+    @GetMapping("/getTrainIdAndDate/{orderId}")
+    @CircuitBreaker(name = "getTrainIdAndDate", fallbackMethod = "fallbackGetTrainIdAndDate")
+    public List<Map<String, Object>> getTrainIdAndDate(@PathVariable String orderId) {
+        return trainService.getTrainIdAndDate(orderId);
+    }
+
+    public List<Map<String, Object>> fallbackGetTrainIdAndDate(String orderId, Throwable throwable) {
+        System.out.println("Get train request failed, fallback method executed.");
+        return new ArrayList<>();
+    }
+
+    @GetMapping("/getStartTime/{trainId}/{trainDate}")
+    @CircuitBreaker(name = "getStartTime", fallbackMethod = "fallbackGetStartTime")
+    public Map<String,Object> getStartTime(@PathVariable String trainId, @PathVariable String trainDate) {
+        return trainService.getStartTime(trainId, trainDate);
+    }
+
+    public Map<String,Object> fallbackGetStartTime (String tid, String date, Throwable throwable) {
+        System.out.println("Get start time request failed, fallback method executed.");
+        return new HashMap<>();
+    }
+    @GetMapping("/getTrainState/{trainId}/{trainDate}")
+    @CircuitBreaker(name = "getTrainState", fallbackMethod = "fallbackGetTrainState")
+    public Boolean getTrainState(@PathVariable String trainId,@PathVariable String trainDate) {
+        return trainService.getTrainState(trainId, trainDate);
+    }
+
+    public Boolean fallbackGetTrainState (String tid, String date, Throwable throwable) {
+        System.out.println("Get train state request failed, fallback method executed.");
+        return Boolean.FALSE;
+    }
     @GetMapping("train/{tid}/{date}")
+    @CircuitBreaker(name = "getTrain", fallbackMethod = "fallbackGetTrain")
     public Train getTrainByTidAndDate(
             @PathVariable String tid,
             @PathVariable String date
     ) {
         return trainService.getTrainByTidAndDate(tid, date);
+    }
+
+    public Train fallbackGetTrain (String tid, String date, Throwable throwable) {
+        System.out.println("Get train request failed, fallback method executed.");
+        return new Train();
     }
 
     // isGD:0高铁 1火车 2全选
@@ -330,22 +383,24 @@ public class TrainController {
             // 恢复座位数
             trainService.updateTrainSeat(trainId, trainDate, num1, num2, num3, num4, num5, num6);
 
-
-            // 取消该trainOrder对应的foodOrder
-            orderClient.getOrderByUid(userID, "Food").forEach(o-> {
-                // 该user的每个车餐订单
-                foodClient.getFoodOrders(o.getOid()).forEach(fo-> {
-                    // System.out.println(o.getOid());
-                    if (fo.getTrainDate().equals(trainDate) && fo.getTrainId().equals(trainId)) {
-                        // 对应的车次的foodOrder
-                        OrderDTO tobeCanceled = orderClient.getOrder(fo.getOid());
-                        orderClient.cancelOrder(tobeCanceled);
-                    }
+            io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("cancelTrainOrder");
+//            try {
+                // 取消该trainOrder对应的foodOrder
+                orderClient.getOrderByUid(userID, "Food").forEach(o -> {
+                    // 该user的每个车餐订单
+                    foodClient.getFoodOrders(o.getOid()).forEach(fo -> {
+                        // System.out.println(o.getOid());
+                        if (fo.getTrainDate().equals(trainDate) && fo.getTrainId().equals(trainId)) {
+                            // 对应的车次的foodOrder
+                            OrderDTO tobeCanceled = orderClient.getOrder(fo.getOid());
+                            orderClient.cancelOrder(tobeCanceled);
+                        }
+                    });
                 });
-            });
-//            foodClient.getTrainRelatedFoodOrders(trainId, trainDate, userID).forEach(e-> {
-//                orderClient.cancelOrder(e);
-//            });
+                //            foodClient.getTrainRelatedFoodOrders(trainId, trainDate, userID).forEach(e-> {
+                //                orderClient.cancelOrder(e);
+                //            });
+//            } catch ()
 
 
             //String content = "您已成功取消" +trainMap.getTrainDate() + " " + trainMap.getTrainId()+ "车次的列车" + food.getMealTime();
@@ -365,6 +420,98 @@ public class TrainController {
 
             return new HashMap<>() {{
                 put("info", "取消成功");
+                put("result", true);
+            }};
+        }
+    }
+
+    public Map<String, Object> fallbackCancelTrainOrder(@PathVariable String userID,
+                                                @PathVariable String oid) {
+        OrderDTO order = orderClient.getOrderByOidAndUid(oid, userID);
+        if (order == null) {
+            return new HashMap<>() {{
+                put("info", "订单不存在");
+                put("result", false);
+            }};
+        } else {
+            orderClient.cancelOrder(order);
+
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = new Date();
+            String formattedDate = formatter.format(date);
+
+            orderClient.setCancelTime(oid, formattedDate);
+
+            List<TrainOrder> trainMap = trainService.getTrainOrdersByOid(oid);
+
+            int num1 = 0, num2 = 0, num3 = 0, num4 = 0, num5 = 0, num6 = 0;
+            for (TrainOrder orderDetail : trainMap) {
+                String type = orderDetail.getSeatType();
+                //trainService.addTrainOrderDetail(oid, trainId, trainDate, person.get("name"), person.get("identification"), type);
+                switch (type) {
+                    case "商务座":
+                        num1 -= 1;
+                        break;
+                    case "一等座":
+                        num2 -= 1;
+                        break;
+                    case "二等座":
+                        num3 -= 1;
+                        break;
+                    case "软卧":
+                        num4 -= 1;
+                        break;
+                    case "硬卧":
+                        num5 -= 1;
+                        break;
+                    case "硬座":
+                        num6 -= 1;
+                        break;
+                }
+            }
+
+            String trainId = trainMap.get(0).getTrainId();
+            String trainDate = trainMap.get(0).getTrainDate();
+            Map<String, Object> train = trainService.getTrainByIdAndDate(trainId, trainDate);
+
+            // 恢复座位数
+            trainService.updateTrainSeat(trainId, trainDate, num1, num2, num3, num4, num5, num6);
+
+
+//            // 取消该trainOrder对应的foodOrder
+//            orderClient.getOrderByUid(userID, "Food").forEach(o-> {
+//                // 该user的每个车餐订单
+//                foodClient.getFoodOrders(o.getOid()).forEach(fo-> {
+//                    // System.out.println(o.getOid());
+//                    if (fo.getTrainDate().equals(trainDate) && fo.getTrainId().equals(trainId)) {
+//                        // 对应的车次的foodOrder
+//                        OrderDTO tobeCanceled = orderClient.getOrder(fo.getOid());
+//                        orderClient.cancelOrder(tobeCanceled);
+//                    }
+//                });
+//            });
+//            foodClient.getTrainRelatedFoodOrders(trainId, trainDate, userID).forEach(e-> {
+//                orderClient.cancelOrder(e);
+//            });
+
+
+            //String content = "您已成功取消" +trainMap.getTrainDate() + " " + trainMap.getTrainId()+ "车次的列车" + food.getMealTime();
+            String content = "【WerwerTrip】服务繁忙，未能取消相应车餐。您已成功取消" + trainDate + "由" + train.get("startStation") + "站发往" + train.get("arrivalStation") + "站的" + trainId + "次列车车票";
+            String Mcontent = "服务繁忙，未能取消相应车餐。您已成功取消" + trainDate + "由" + train.get("startStation") + "站发往" + train.get("arrivalStation") + "站的" + trainId + "次列车车票";
+            // messageService.addMessage(userID, Message.generateMessageId(), oid, "火车订单取消成功", formattedDate, Mcontent, false, "3");
+            messageClient.addMessage(new HashMap<>() {{
+                put("userId", userID);
+                put("orderId", oid);
+                put("title", "火车订单取消成功");
+                put("messageTime", formattedDate);
+                put("content", Mcontent);
+                put("orderType", "3");
+            }});
+
+            emailService.sendSimpleMail(userClient.getEmail(userID), "火车订单取消成功", content);
+
+            return new HashMap<>() {{
+                put("info", "取消成功，取消车餐失败");
                 put("result", true);
             }};
         }
