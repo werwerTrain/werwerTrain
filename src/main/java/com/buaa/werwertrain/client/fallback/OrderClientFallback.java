@@ -2,12 +2,14 @@ package com.buaa.werwertrain.client.fallback;
 
 import com.buaa.werwertrain.DTO.OrderDTO;
 import com.buaa.werwertrain.client.OrderClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@CircuitBreaker(name = "orderClient")
 public class OrderClientFallback implements OrderClient {
     @Override
     public List<OrderDTO> getOrdersByUidAndStatus(String uid, String status, String type) {

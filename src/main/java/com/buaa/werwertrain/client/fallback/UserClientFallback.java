@@ -1,7 +1,9 @@
 package com.buaa.werwertrain.client.fallback;
 
 import com.buaa.werwertrain.client.UserClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
+@CircuitBreaker(name = "userClient")
 public class UserClientFallback implements UserClient {
 
     @Override
